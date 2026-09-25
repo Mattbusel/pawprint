@@ -244,7 +244,7 @@ final class Store {
     var db = DB()
     let demo: Bool
     var clock = Date()
-    @ObservationIgnored private let url = URL.documentsDirectory.appending(path: "pawprint.json")
+    private let url = URL.documentsDirectory.appending(path: "pawprint.json")
 
     init(demo: Bool) {
         self.demo = demo

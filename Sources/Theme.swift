@@ -237,14 +237,7 @@ struct PawBurst: View {
     @State private var p: CGFloat = 1
     var body: some View {
         ZStack {
-            ForEach(0..<7, id: \.self) { i in
-                let a = Double(i) / 7 * 2 * .pi - .pi / 2
-                Image(systemName: "pawprint.fill").font(.system(size: 9, weight: .bold)).foregroundStyle(color)
-                    .rotationEffect(.radians(a + .pi / 2))
-                    .offset(x: cos(a) * (12 + 24 * p), y: sin(a) * (12 + 24 * p))
-                    .scaleEffect(0.5 + 0.7 * p)
-                    .opacity(p >= 1 ? 0 : Double(1 - p))
-            }
+            ForEach(0..<7, id: \.self) { i in BurstPaw(index: i, p: p, color: color) }
         }
         .allowsHitTesting(false)
         .onChange(of: trigger) { _, _ in
@@ -252,5 +245,25 @@ struct PawBurst: View {
             withTransaction(t) { p = 0 }
             DispatchQueue.main.async { withAnimation(.easeOut(duration: 0.75)) { p = 1 } }
         }
+    }
+}
+
+private struct BurstPaw: View {
+    let index: Int
+    let p: CGFloat
+    let color: Color
+    var body: some View {
+        let a: Double = Double(index) / 7.0 * 2.0 * Double.pi - Double.pi / 2.0
+        let r: CGFloat = 12 + 24 * p
+        let dx: CGFloat = CGFloat(cos(a)) * r
+        let dy: CGFloat = CGFloat(sin(a)) * r
+        let fade: Double = p >= 1 ? 0 : Double(1 - p)
+        return Image(systemName: "pawprint.fill")
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(color)
+            .rotationEffect(.radians(a + Double.pi / 2.0))
+            .offset(x: dx, y: dy)
+            .scaleEffect(0.5 + 0.7 * p)
+            .opacity(fade)
     }
 }

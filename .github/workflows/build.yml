@@ -42,6 +42,9 @@ jobs:
           app=$(find dd/Build/Products -name "Pawprint.app" -path "*iphonesimulator*" | head -1)
           xcrun simctl install "$udid" "$app"
           mkdir -p shots
+          # Warm-up: the first launch after install is slow and was captured black.
+          xcrun simctl launch "$udid" com.mattbusel.pawprint -shot today || true
+          sleep 15
           xcrun simctl terminate "$udid" com.mattbusel.pawprint || true
           xcrun simctl launch "$udid" com.mattbusel.pawprint -shot today
           sleep 7

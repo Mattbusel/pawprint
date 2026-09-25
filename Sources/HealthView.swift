@@ -159,6 +159,7 @@ struct WeightCard: View {
             }
         }
         .chartYScale(domain: (lo - pad)...(hi + pad))
+        .chartXScale(range: .plotDimension(startPadding: 8, endPadding: 22))
         .chartXAxis {
             AxisMarks(values: .stride(by: .month, count: max(1, D.cal.dateComponents([.month], from: first, to: last).month ?? 6) > 8 ? 3 : 2)) { _ in
                 AxisValueLabel(format: .dateTime.month(.abbreviated)).font(.round(10.5, .semibold)).foregroundStyle(Oat.dim)

@@ -94,6 +94,11 @@ struct PetDetail: View {
                     VStack(alignment: .leading, spacing: 0) {
                         hero(pet)
                         VStack(alignment: .leading, spacing: 18) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(pet.name).font(.display(42)).foregroundStyle(Oat.ink)
+                                Text([pet.breed.isEmpty ? pet.species.label : pet.breed, pet.sex].filter { !$0.isEmpty }.joined(separator: " · "))
+                                    .font(.round(15, .semibold)).foregroundStyle(Oat.ink2)
+                            }
                             stats(pet)
                             care(pet)
                             if !pet.food.isEmpty { InfoCard(title: "Food", icon: "fork.knife", tint: Oat.honey, text: pet.food) }
@@ -124,24 +129,9 @@ struct PetDetail: View {
     }
 
     func hero(_ pet: Pet) -> some View {
-        PetPortrait(pet: pet, faceSize: 270)
-            .frame(height: 420)
+        PetPortrait(pet: pet, faceSize: 280)
+            .frame(height: 400)
             .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 40, bottomTrailingRadius: 40, style: .continuous))
-            .overlay(alignment: .bottomLeading) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(pet.name).font(.display(44)).foregroundStyle(pet.hasPhoto ? .white : Oat.ink)
-                    Text([pet.breed.isEmpty ? pet.species.label : pet.breed, pet.sex].filter { !$0.isEmpty }.joined(separator: " · "))
-                        .font(.round(14.5, .semibold)).foregroundStyle(pet.hasPhoto ? .white.opacity(0.85) : Oat.ink2)
-                }
-                .padding(.horizontal, 24).padding(.bottom, 24)
-                .shadow(color: pet.hasPhoto ? .black.opacity(0.35) : .clear, radius: 10)
-            }
-            .overlay {
-                if pet.hasPhoto {
-                    LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .center, endPoint: .bottom)
-                        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 40, bottomTrailingRadius: 40, style: .continuous)).allowsHitTesting(false)
-                }
-            }
             .overlay(alignment: .bottomTrailing) {
                 PhotosPicker(selection: $photo, matching: .images) {
                     Image(systemName: "camera.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(Oat.ink)

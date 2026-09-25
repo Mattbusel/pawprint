@@ -130,13 +130,18 @@ struct PetStrip: View {
     @Environment(Router.self) private var router
     let slots: [Slot]
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                ForEach(store.db.pets) { p in badge(p) }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 0) {
+                ForEach(store.db.pets) { p in badge(p).frame(maxWidth: .infinity) }
             }
-            .padding(.horizontal, 20).padding(.vertical, 4)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(store.db.pets) { p in badge(p) }
+                }
+                .padding(.horizontal, 20).padding(.vertical, 4)
+            }
+            .padding(.horizontal, -20)
         }
-        .padding(.horizontal, -20)
     }
     func badge(_ p: Pet) -> some View {
         let mine = slots.filter { $0.dose.petID == p.id }
@@ -223,11 +228,19 @@ struct Timeline: View {
     @Environment(Store.self) private var store
     let slots: [Slot]
     var tap: (Slot) -> Void
+    @State private var expanded = false
     var body: some View {
-        let groups = Dictionary(grouping: slots, by: \.time).sorted { D.mins($0.key) < D.mins($1.key) }
         let nowMin = D.cal.component(.hour, from: store.now) * 60 + D.cal.component(.minute, from: store.now)
+        let all = Dictionary(grouping: slots, by: \.time).sorted { D.mins($0.key) < D.mins($1.key) }
+        // Finished groups from more than 45 minutes ago fold into one line.
+        let folded = all.prefix { g in D.mins(g.key) < nowMin - 45 && g.value.allSatisfy { store.given($0) != nil } }
+        let groups = expanded ? all : Array(all.dropFirst(folded.count))
         let nextIdx = groups.firstIndex { D.mins($0.key) > nowMin }
         VStack(alignment: .leading, spacing: 0) {
+            if !folded.isEmpty {
+                DoneEarlier(slots: folded.flatMap(\.value), expanded: expanded) { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { expanded.toggle() } }
+                    .padding(.bottom, 18)
+            }
             ForEach(Array(groups.enumerated()), id: \.element.key) { i, g in
                 if i == nextIdx { NowMarker(time: store.now) }
                 HStack(alignment: .top, spacing: 12) {
@@ -359,5 +372,38 @@ struct EmptyToday: View {
             BigButton(title: "Add a pet", icon: "plus") { router.newPet() }.padding(.top, 6)
         }
         .padding(.top, 40)
+    }
+}
+
+/// Everything finished earlier today, folded into one line of little faces.
+struct DoneEarlier: View {
+    @Environment(Store.self) private var store
+    let slots: [Slot]
+    let expanded: Bool
+    var toggle: () -> Void
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy)).foregroundStyle(.white)
+                    .frame(width: 30, height: 30).background(Circle().fill(Oat.sage))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(slots.count) done earlier").font(.round(15, .bold)).foregroundStyle(Oat.ink)
+                    Text(summary).font(.round(12.5, .medium)).foregroundStyle(Oat.dim).lineLimit(1)
+                }
+                Spacer(minLength: 4)
+                HStack(spacing: -10) {
+                    ForEach(Array(slots.prefix(5).enumerated()), id: \.offset) { _, s in
+                        if let p = store.pet(s.dose.petID) { PetAvatar(pet: p, size: 28).overlay(Circle().strokeBorder(Oat.card, lineWidth: 2)) }
+                    }
+                }
+                Image(systemName: expanded ? "chevron.up" : "chevron.down").font(.system(size: 11, weight: .heavy)).foregroundStyle(Oat.faint)
+            }
+            .card(12, radius: 20, fill: Oat.sageSoft.opacity(0.5))
+        }.buttonStyle(.plain)
+    }
+    var summary: String {
+        let names = slots.map(\.dose.name)
+        var seen = Set<String>(); let uniq = names.filter { seen.insert($0).inserted }
+        return uniq.joined(separator: ", ")
     }
 }

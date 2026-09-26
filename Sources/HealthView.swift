@@ -4,6 +4,7 @@ import Charts
 struct HealthView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
+    @Environment(Pro.self) private var pro
     @State private var tag: NoteTag? = nil
     @State private var share: URL? = nil
     var body: some View {
@@ -19,7 +20,7 @@ struct HealthView: View {
                     WeightCard(pet: pet)
                     notes(pet)
                     Button {
-                        share = PDFs.vetSummary(store, pet)
+                        if pro.allow(.vet) { share = PDFs.vetSummary(store, pet) }
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "doc.richtext.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(Oat.sky)
@@ -29,7 +30,7 @@ struct HealthView: View {
                                 Text("One page for \(pet.name)'s next check-up: meds, missed doses, vaccines, weight, notes and your questions.").font(.round(12.5, .medium)).foregroundStyle(Oat.dim).multilineTextAlignment(.leading)
                             }
                             Spacer(minLength: 0)
-                            Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .bold)).foregroundStyle(Oat.accent)
+                            Image(systemName: pro.unlocked ? "square.and.arrow.up" : "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(Oat.accent)
                         }
                         .card(14, radius: 22)
                     }.pressable()

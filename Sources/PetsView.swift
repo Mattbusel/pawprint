@@ -29,7 +29,7 @@ struct PetsList: View {
                     ForEach(store.db.pets) { p in
                         Button { router.petPath = [p.id] } label: { PetCard(pet: p) }.pressable()
                     }
-                    Button { router.newPet() } label: {
+                    Button { router.newPet(store) } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "plus").font(.system(size: 15, weight: .heavy))
                             Text("Add a pet").font(.round(16, .bold))
@@ -37,6 +37,7 @@ struct PetsList: View {
                         .foregroundStyle(Oat.ink2).frame(maxWidth: .infinity).padding(.vertical, 26)
                         .background(RoundedRectangle(cornerRadius: 26, style: .continuous).strokeBorder(Oat.line2, style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])))
                     }.pressable()
+                    ProCard().padding(.top, 8)
                 }
                 .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 130)
             }

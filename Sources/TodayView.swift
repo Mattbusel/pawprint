@@ -360,6 +360,7 @@ struct TickButton: View {
 
 struct EmptyToday: View {
     @Environment(Router.self) private var router
+    @Environment(Store.self) private var store
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: -14) {
@@ -369,7 +370,7 @@ struct EmptyToday: View {
             }
             Text("Who are we looking after?").font(.display(24)).foregroundStyle(Oat.ink)
             Text("Add your first pet, then their meals and medicines. Everyone in the house can tick doses here, and the phone can remind you.").font(.round(15, .medium)).foregroundStyle(Oat.ink2).multilineTextAlignment(.center)
-            BigButton(title: "Add a pet", icon: "plus") { router.newPet() }.padding(.top, 6)
+            BigButton(title: "Add a pet", icon: "plus") { router.newPet(store) }.padding(.top, 6)
         }
         .padding(.top, 40)
     }

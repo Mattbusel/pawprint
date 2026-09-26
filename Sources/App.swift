@@ -12,18 +12,27 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 struct PawprintApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var store: Store
-    @State private var router = Router()
+    @State private var router: Router
+    @State private var pro: Pro
     @Environment(\.scenePhase) private var phase
     init() {
         let a = ProcessInfo.processInfo.arguments
         let s = Store(demo: a.contains("-shot") || a.contains("-demoAutoplay"))
         _store = State(initialValue: s)
+        // Screenshots and the review recording never touch StoreKit; `-shot paywall` shows the real, locked paywall.
+        let shot = a.firstIndex(of: "-shot").flatMap { $0 + 1 < a.count ? a[$0 + 1] : nil }
+        let p: Pro
+        if shot == "paywall" { p = Pro(forced: false); p.paywall = .pets }
+        else if shot != nil || a.contains("-demoAutoplay") { p = Pro(forced: true) }
+        else { p = Pro() }
+        _pro = State(initialValue: p)
+        _router = State(initialValue: Router(pro: p))
         Reminders.shared.attach(s)
     }
     var body: some Scene {
         WindowGroup {
-            RootView().environment(store).environment(router).preferredColorScheme(.light).tint(Oat.accent)
-                .onAppear { router.applyShotArgs(store); Autopilot.shared.run(store, router) }
+            RootView().environment(store).environment(router).environment(pro).preferredColorScheme(.light).tint(Oat.accent)
+                .onAppear { router.applyShotArgs(store); Autopilot.shared.run(store, router, pro) }
         }
         .onChange(of: phase) { _, p in
             if p == .active { store.tick(); Reminders.shared.reschedule(store) }
@@ -69,6 +78,8 @@ final class Router {
     var sheet: Sheet? = nil
     var healthPet: UUID? = nil
     var todayPet: UUID? = nil
+    let pro: Pro
+    init(pro: Pro) { self.pro = pro }
 
     func applyShotArgs(_ s: Store) {
         let a = ProcessInfo.processInfo.arguments
@@ -88,7 +99,10 @@ final class Router {
 
     // New things, with sensible defaults for the pet on screen.
     func newDose(_ s: Store, pet: UUID? = nil) { if let p = pet ?? todayPet ?? s.db.pets.first?.id { sheet = .dose(Dose(petID: p, start: s.today), true) } else { sheet = .pet(Pet(name: ""), true) } }
-    func newPet() { sheet = .pet(Pet(name: "", coat: Int.random(in: 0..<Coat.all.count)), true) }
+    /// The first pet is free; more need Pro.
+    @MainActor func newPet(_ s: Store) {
+        guard pro.canAddPet(s) else { sheet = nil; pro.paywall = .pets; return }
+        sheet = .pet(Pet(name: "", coat: Int.random(in: 0..<Coat.all.count)), true) }
     func newVaccine(_ s: Store, pet: UUID? = nil) { if let p = pet ?? s.db.pets.first?.id { sheet = .vaccine(Vaccine(petID: p, name: "", given: s.today), true) } }
     func newAppt(_ s: Store, pet: UUID? = nil) { if let p = pet ?? s.db.pets.first?.id { sheet = .appt(Appt(petID: p, date: D.add(7, s.today).addingTimeInterval(10 * 3600)), true) } }
     func newWeight(_ s: Store, pet: UUID? = nil) { if let p = pet ?? healthPet ?? s.db.pets.first?.id { sheet = .weight(Weigh(petID: p, date: s.now, value: s.latest(p)?.value ?? 0), true) } }
@@ -98,8 +112,10 @@ final class Router {
 struct RootView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
+    @Environment(Pro.self) private var pro
     var body: some View {
         @Bindable var router = router
+        @Bindable var pro = pro
         ZStack(alignment: .bottom) {
             OatBackground()
             Group {
@@ -128,7 +144,14 @@ struct RootView: View {
                 }
             }
             .presentationBackground(Oat.bg).presentationCornerRadius(34)
-            .environment(store).environment(router)
+            .environment(store).environment(router).environment(pro)
+        }
+        .overlay {
+            // A second presenter, so the paywall can come up whatever else is showing.
+            Color.clear.allowsHitTesting(false)
+                .sheet(item: $pro.paywall) { why in
+                    PaywallView(reason: why).environment(pro).presentationBackground(Oat.bg).presentationCornerRadius(34)
+                }
         }
     }
 }
@@ -188,7 +211,7 @@ struct AddMenu: View {
                 tile("Vaccine", "syringe.fill", Oat.sky) { router.newVaccine(store) }
                 tile("Vet visit", "calendar", Oat.honey) { router.newAppt(store) }
                 tile("Note", "note.text", Color(hex: 0x8A5A8C)) { router.newNote(store) }
-                tile("Pet", "pawprint.fill", Oat.ink) { router.newPet() }
+                tile("Pet", "pawprint.fill", Oat.ink) { router.newPet(store) }
             }
             Spacer(minLength: 0)
         }

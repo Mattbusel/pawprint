@@ -3,6 +3,7 @@ import SwiftUI
 struct SitterView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
+    @Environment(Pro.self) private var pro
     @State private var share: URL? = nil
     var body: some View {
         @Bindable var store = store
@@ -16,7 +17,9 @@ struct SitterView: View {
                         .font(.round(14.5, .medium)).foregroundStyle(Oat.ink2).fixedSize(horizontal: false, vertical: true)
                 }
                 PageFan(store: store).frame(maxWidth: .infinity)
-                BigButton(title: "Share the sitter sheet", icon: "square.and.arrow.up") { share = PDFs.sitter(store) }
+                BigButton(title: "Share the sitter sheet", icon: pro.unlocked ? "square.and.arrow.up" : "lock.fill") {
+                    if pro.allow(.sitter) { share = PDFs.sitter(store) }
+                }
                 Text("\(PDFs.sitterPages(store).count) pages · \(days) day\(days == 1 ? "" : "s") on the tick sheet · print it or send it to them")
                     .font(.round(12.5, .semibold)).foregroundStyle(Oat.dim).frame(maxWidth: .infinity)
 

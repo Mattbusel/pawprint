@@ -8,7 +8,7 @@ final class Autopilot {
     private var running = false
     @MainActor private func wait(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
     @MainActor
-    func run(_ store: Store, _ router: Router) {
+    func run(_ store: Store, _ router: Router, _ pro: Pro) {
         guard Autopilot.on, !running else { return }
         running = true
         Task { @MainActor in
@@ -29,6 +29,10 @@ final class Autopilot {
             withAnimation { router.tab = .today }; await wait(1.2)
             router.applyShotArgsAdd(store); await wait(4)
             router.sheet = nil; await wait(1.5)
+            // The one purchase: Pawprint Pro, as a reviewer would reach it.
+            withAnimation { router.tab = .pets }; await wait(1.5)
+            pro.paywall = .pets; await wait(5)
+            pro.paywall = nil; await wait(1.5)
             try? Data("ok".utf8).write(to: URL.documentsDirectory.appending(path: "demo_done"))
         }
     }

@@ -200,7 +200,7 @@ struct PaywallView: View {
 
     /// Four drawn faces side by side, with the Pro tag swinging off the middle.
     var family: some View {
-        let faces: [(Species, Int)] = [(.cat, 3), (.dog, 1), (.rabbit, 5), (.dog, 7)]
+        let faces: [(Species, Int)] = [(.cat, 3), (.dog, 1), (.rabbit, 5), (.other, 4)]
         return ZStack(alignment: .top) {
             HStack(spacing: -18) {
                 ForEach(Array(faces.enumerated()), id: \.offset) { i, f in
